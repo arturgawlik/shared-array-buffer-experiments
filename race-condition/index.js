@@ -46,7 +46,6 @@ function main() {
 }
 
 function mainWorker() {
-  let incrementCalls = 0;
   let viewArray = null;
   let workerIndex = null;
 
@@ -60,7 +59,6 @@ function mainWorker() {
   function startInterval() {
     setInterval(() => {
       increment(viewArray, workerIndex);
-      incrementCalls++;
     }, 1000);
   }
 }
