@@ -27,16 +27,12 @@ function main() {
   }
 
   setInterval(() => {
-    logValues(
-      view[0],
-      view.reduce((prevValue, currValue, index) => {
-        if (index) {
-          return prevValue + currValue;
-        } else {
-          return BigInt(0);
-        }
-      })
-    );
+    let incrementCallsCount = BigInt(0);
+    view.slice(1).forEach((val) => {
+      incrementCallsCount += val;
+    });
+
+    logValues(view[0], incrementCallsCount);
   }, 3000);
 
   function logValues(actualValue, incrementCalls) {
