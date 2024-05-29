@@ -35,10 +35,8 @@ function main() {
   }
 
   // reading count of increments and incremented value
-  setInterval(() => {
-    // FIXME: we cannot call sync wait's in main thread.
-    // probably need to replace it with waitAsync
-    mutex.lock();
+  setInterval(async () => {
+    await mutex.lock();
 
     let incrementCallsCount = BigInt(0);
     VIEW.slice(1).forEach((val) => {
@@ -80,8 +78,8 @@ function mainWorker() {
  * @param {number} workerIndex
  * @param {Mutex} mutex
  */
-function increment(view, workerIndex, mutex) {
-  mutex.lock();
+async function increment(view, workerIndex, mutex) {
+  await mutex.lock();
 
   view[0]++;
   view[workerIndex]++;

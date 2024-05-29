@@ -31,7 +31,7 @@ export default class Mutex {
   /**
    * Switch mutext to lock state.
    */
-  lock() {
+  async lock() {
     for (;;) {
       if (
         Atomics.compareExchange(this._mu, 0, Mutex.#UNLOCKED, Mutex.#LOCKED) ===
@@ -39,7 +39,10 @@ export default class Mutex {
       ) {
         return;
       }
-      Atomics.wait(this._mu, 0, Mutex.#LOCKED);
+      const { value } = Atomics.waitAsync(this._mu, 0, Mutex.#LOCKED);
+      if (value instanceof Promise) {
+        await value;
+      }
     }
   }
 
