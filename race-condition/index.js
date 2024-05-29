@@ -1,4 +1,5 @@
 import Mutex from "./mutex.js";
+const WORKER_URL = new URL("index.js", import.meta.url);
 
 if (isMainProcess()) {
   main();
@@ -11,7 +12,7 @@ function isMainProcess() {
 }
 
 function main() {
-  const WORKERS_COUNT = 100;
+  const WORKERS_COUNT = 8;
   const SHARED_BUFFER = new SharedArrayBuffer(
     BigInt64Array.BYTES_PER_ELEMENT * (WORKERS_COUNT + 1)
   );
@@ -23,7 +24,7 @@ function main() {
   const { mutex, sharedArrayBuffer } = prepareSynchronizationHelpers();
 
   for (let index = 0; index < WORKERS_COUNT; index++) {
-    const worker = new Worker(new URL("index.js", import.meta.url), {
+    const worker = new Worker(WORKER_URL, {
       type: "module",
     });
     worker.postMessage({
