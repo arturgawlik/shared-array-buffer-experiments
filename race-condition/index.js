@@ -1,4 +1,5 @@
-import Mutex from "./mutex";
+import Mutex from "./mutex.js";
+import WaitGroup from "./wait-group.js";
 
 if (isMainProcess()) {
   main();
