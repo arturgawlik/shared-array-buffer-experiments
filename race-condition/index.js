@@ -36,6 +36,8 @@ function main() {
 
   // reading count of increments and incremented value
   setInterval(() => {
+    // FIXME: we cannot call sync wait's in main thread.
+    // probably need to replace it with waitAsync
     mutex.lock();
 
     let incrementCallsCount = BigInt(0);
