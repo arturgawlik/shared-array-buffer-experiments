@@ -1,3 +1,5 @@
+import Mutex from "./mutex";
+
 if (isMainProcess()) {
   main();
 } else {
@@ -59,7 +61,18 @@ function mainWorker() {
   }
 }
 
+// let isFirst = true;
 function increment(view, workerIndex) {
+  // if (!isFirst) {
+  //   const waitResult = Atomics.wait(view, 0, view[0]);
+  //   if (waitResult === "not-equal" || waitResult === "timed-out") {
+  //     throw new Error("Non expected result...");
+  //   }
+  // }
+  // isFirst = false;
+  Atomics.add(view, 0, BigInt(1));
   view[0]++;
   view[workerIndex]++;
+
+  // Atomics.notify(view, 0);
 }
