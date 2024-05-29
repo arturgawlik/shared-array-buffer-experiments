@@ -1,5 +1,4 @@
 import Mutex from "./mutex.js";
-import WaitGroup from "./wait-group.js";
 
 if (isMainProcess()) {
   main();
@@ -12,31 +11,41 @@ function isMainProcess() {
 }
 
 function main() {
-  const WORKERS_COUNT = 2;
+  const WORKERS_COUNT = 100;
   const SHARED_BUFFER = new SharedArrayBuffer(
     BigInt64Array.BYTES_PER_ELEMENT * (WORKERS_COUNT + 1)
   );
-  const view = new BigInt64Array(SHARED_BUFFER);
-  view.fill(BigInt(0));
+  const VIEW = new BigInt64Array(SHARED_BUFFER).fill(BigInt(0));
 
   const actualValueElem = document.querySelector("#actual-value");
   const incrementCallsElem = document.querySelector("#increment-calls");
+
+  const { mutex, sharedArrayBuffer } = prepareSynchronizationHelpers();
 
   for (let index = 0; index < WORKERS_COUNT; index++) {
     const worker = new Worker(new URL("index.js", import.meta.url), {
       type: "module",
     });
-    worker.postMessage({ view, index: index + 1 });
+    worker.postMessage({
+      view: VIEW,
+      index: index + 1,
+      mutex,
+      sharedArrayBuffer,
+    });
   }
 
+  // reading count of increments and incremented value
   setInterval(() => {
+    mutex.lock();
+
     let incrementCallsCount = BigInt(0);
-    view.slice(1).forEach((val) => {
+    VIEW.slice(1).forEach((val) => {
       incrementCallsCount += val;
     });
+    logValues(VIEW[0], incrementCallsCount);
 
-    logValues(view[0], incrementCallsCount);
-  }, 3000);
+    mutex.unlock();
+  }, 1000);
 
   function logValues(actualValue, incrementCalls) {
     actualValueElem.innerHTML = actualValue;
@@ -45,35 +54,44 @@ function main() {
 }
 
 function mainWorker() {
-  let viewArray = null;
+  let workerViewArray = null;
   let workerIndex = null;
+  let workerMutex = null;
 
   globalThis.addEventListener("message", (event) => {
-    const { view, index } = event.data;
+    const { view, index, mutex } = event.data;
     workerIndex = index;
-    viewArray = view;
+    workerViewArray = view;
+    workerMutex = Mutex.connect(mutex);
     startInterval();
   });
 
   function startInterval() {
     setInterval(() => {
-      increment(viewArray, workerIndex);
-    }, 1000);
+      increment(workerViewArray, workerIndex, workerMutex);
+    });
   }
 }
 
-// let isFirst = true;
-function increment(view, workerIndex) {
-  // if (!isFirst) {
-  //   const waitResult = Atomics.wait(view, 0, view[0]);
-  //   if (waitResult === "not-equal" || waitResult === "timed-out") {
-  //     throw new Error("Non expected result...");
-  //   }
-  // }
-  // isFirst = false;
-  Atomics.add(view, 0, BigInt(1));
+/**
+ * @param {BigInt64Array} view
+ * @param {number} workerIndex
+ * @param {Mutex} mutex
+ */
+function increment(view, workerIndex, mutex) {
+  mutex.lock();
+
   view[0]++;
   view[workerIndex]++;
 
-  // Atomics.notify(view, 0);
+  mutex.unlock();
+}
+
+function prepareSynchronizationHelpers() {
+  const sharedArrayBuffer = new SharedArrayBuffer(4);
+  const mutex = new Mutex();
+  return {
+    sharedArrayBuffer,
+    mutex,
+  };
 }
